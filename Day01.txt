@@ -1,0 +1,42 @@
+﻿
+Part1();
+
+Part2();
+
+Console.WriteLine("end");
+Console.ReadLine();
+
+
+string[] ParseInput()
+{
+	var input = File.ReadAllLines("input.txt");
+
+	return input;
+}
+
+
+void Part1()
+{
+	var input = ParseInput().Select(x => x.ToCharArray().Select(c => c.ToString()).Where(n => int.TryParse(n, out var _)).Select(n => int.Parse(n)).ToArray()).ToArray();
+
+	int sum = 0;
+	foreach (var x in input)
+		sum += x[0] * 10 + x[x.Length - 1];
+
+	Console.WriteLine($"Part 1: {sum}");
+}
+
+
+void Part2()
+{
+	var input = ParseInput()
+		.Select(x => x.Replace("twone", "2ne").Replace("eightwo", "8wo").Replace("eighthree", "8hree").Replace("nineight", "9ight")
+			.Replace("one", "1").Replace("two", "2").Replace("three", "3").Replace("four", "4").Replace("five", "5").Replace("six", "6").Replace("seven", "7").Replace("eight", "8").Replace("nine", "9"))
+		.Select(x => x.ToCharArray().Select(c => c.ToString()).Where(n => int.TryParse(n, out var _)).Select(n => int.Parse(n)).ToArray()).ToArray();
+
+	int sum = 0;
+	foreach (var x in input)
+		sum += x[0] * 10 + x[x.Length - 1];
+
+	Console.WriteLine($"Part 2: {sum}");
+}
