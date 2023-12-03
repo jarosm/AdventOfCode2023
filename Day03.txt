@@ -1,0 +1,116 @@
+﻿
+Part1();
+
+Part2();
+
+Console.WriteLine("end");
+Console.ReadLine();
+
+
+string[] ParseInput()
+{
+	var input = File.ReadAllLines("input.txt");
+
+	return input;
+}
+
+
+void Part1()
+{
+	var input = ParseInput();
+
+	long sum = 0;
+
+	for (int y = 0; y < input.Length; y++)
+	{
+		int x = 0;
+		while (x < input[y].Length)
+		{
+			if (!(input[y][x] >= '0' && input[y][x] <= '9'))
+			{
+				x++;
+				continue;
+			}
+
+			// Get whole number
+			string snum = input[y][x].ToString();
+			x++;
+			while (x < input[y].Length && input[y][x] >= '0' && input[y][x] <= '9')
+			{
+				snum += input[y][x].ToString();
+				x++;
+			}
+
+			// Look for symbol
+			bool found = false;
+			for (int j = y - 1; j <= y + 1; j++)
+			{
+				if (j < 0 || j >= input.Length)
+					continue;
+				for (int i = x - 1 - snum.Length; i <= x; i++)
+				{
+					if (i < 0 || i >= input[j].Length)
+						continue;
+					if (!(input[j][i] >= '0' && input[j][i] <= '9') && input[j][i] != '.')
+					{
+						sum += int.Parse(snum);
+						found = true;
+						break;
+					}
+				}
+				if (found)
+					break;
+			}
+		}
+	}
+
+	Console.WriteLine($"Part 1: {sum}");
+}
+
+
+void Part2()
+{
+	var input = ParseInput();
+
+	HashSet<((int Y, int X) Gear, int PartNum)> possibleGears = new HashSet<((int Y, int X) Gear, int PartNum)>();
+
+	for (int y = 0; y < input.Length; y++)
+	{
+		int x = 0;
+		while (x < input[y].Length)
+		{
+			if (!(input[y][x] >= '0' && input[y][x] <= '9'))
+			{
+				x++;
+				continue;
+			}
+
+			// Get whole number
+			string snum = input[y][x].ToString();
+			x++;
+			while (x < input[y].Length && input[y][x] >= '0' && input[y][x] <= '9')
+			{
+				snum += input[y][x].ToString();
+				x++;
+			}
+
+			// Look for gear symbol
+			for (int j = y - 1; j <= y + 1; j++)
+			{
+				if (j < 0 || j >= input.Length)
+					continue;
+				for (int i = x - 1 - snum.Length; i <= x; i++)
+				{
+					if (i < 0 || i >= input[j].Length)
+						continue;
+					if (!(input[j][i] >= '0' && input[j][i] <= '9') && input[j][i] == '*')
+						possibleGears.Add(((j, i), int.Parse(snum)));
+				}
+			}
+		}
+	}
+
+	long sum = possibleGears.GroupBy(g => g.Gear).Where(g => g.Count() == 2).Sum(g => (long)g.First().PartNum * (long)g.Last().PartNum);
+
+	Console.WriteLine($"Part 2: {sum}");
+}
