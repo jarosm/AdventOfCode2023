@@ -1,0 +1,67 @@
+﻿
+using System.Collections;
+
+Part1();
+
+Part2();
+
+Console.WriteLine("end");
+Console.ReadLine();
+
+
+string[][] ParseInput()
+{
+	var input = File.ReadAllLines("input.txt").Select(a => a.Replace("Card ", "").Replace(": ", "|").Replace(" | ", "|").Split("|")).ToArray();
+
+	return input;
+}
+
+
+void Part1()
+{
+	var input = ParseInput();
+
+	double sum = 0;
+	foreach (var card in input)
+	{
+		int[] winning = card[1].Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(a => int.Parse(a)).ToArray();
+		int[] scratched = card[2].Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(a => int.Parse(a)).ToArray();
+
+		int[] intersect = scratched.Intersect(winning).ToArray();
+
+		if (intersect.Length > 0)
+			sum += Math.Pow(2, intersect.Length - 1);
+	}
+
+	Console.WriteLine($"Part 1: {sum}");
+}
+
+
+void Part2()
+{
+	var input = ParseInput();
+
+	int[] matches = new int[input.Length];
+	int[] counts = new int[input.Length];
+	Queue<int> queue = new Queue<int>();
+
+	for (int i = 0; i < input.Length; i++)
+	{
+		int[] winning = input[i][1].Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(a => int.Parse(a)).ToArray();
+		int[] scratched = input[i][2].Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(a => int.Parse(a)).ToArray();
+		int[] intersect = scratched.Intersect(winning).ToArray();
+
+		matches[i] = intersect.Length;
+		queue.Enqueue(i);
+	}
+
+	while (queue.Count > 0)
+	{
+		var i = queue.Dequeue();
+		counts[i]++;
+		for (int j = i + 1; j < matches.Length && j <= i + matches[i]; j++)
+			queue.Enqueue(j);
+	}
+
+	Console.WriteLine($"Part 2: {counts.Sum()}");
+}
