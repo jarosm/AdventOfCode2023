@@ -1,0 +1,162 @@
+﻿
+long[] seeds = new long[1];
+
+Part1();
+
+Part2();
+
+Console.WriteLine("end");
+Console.ReadLine();
+
+
+List<(Category category, long destination, long source, long length)> ParseInput()
+{
+	var input = File.ReadAllLines("input.txt");
+
+	List<(Category category, long destination, long source, long length)> maps = new List<(Category category, long destination, long source, long length)>();
+	Category cat = Category.seed_to_soil;
+	foreach (var line in input)
+	{
+		if (line.Length == 0)
+			continue;
+		if (line.StartsWith("seeds"))
+		{
+			seeds = line.Replace("seeds: ", "").Split(' ').Select(s => long.Parse(s)).ToArray();
+			continue;
+		}
+		if (line.Contains("map"))
+		{
+			cat = Enum.Parse<Category>(line.Replace(" map:", "").Replace("-", "_"));
+			continue;
+		}
+		long[] map = line.Split(' ').Select(s => long.Parse(s)).ToArray();
+		maps.Add((cat, map[0], map[1], map[2]));
+	}
+
+	return maps;
+}
+
+
+void Part1()
+{
+	var input = ParseInput();
+	var maps = input.GroupBy(a => a.category); // Group by category
+
+    foreach (var cat in Enum.GetNames(typeof(Category))) // Get categories in order in enum
+    {
+		// Get maps for category
+		var map = maps.Where(m => m.Key == Enum.Parse<Category>(cat)).First().ToList().OrderBy(a => a.source).ToArray();
+
+		// Sort seeds
+		seeds = seeds.OrderBy(s => s).ToArray();
+
+		// Iterate through ordered seeds and maps
+		int mIndex = 0, sIndex = 0;
+		while (mIndex < map.Length && sIndex < seeds.Length)
+		{
+			if (seeds[sIndex] >= map[mIndex].source + map[mIndex].length)
+			{
+				mIndex++;
+				continue;
+			}
+
+			if (seeds[sIndex] < map[mIndex].source)
+			{
+				sIndex++;
+				continue;
+			}
+
+			seeds[sIndex] = map[mIndex].destination + (seeds[sIndex] - map[mIndex].source);
+			sIndex++;
+		}
+	}
+
+    Console.WriteLine($"Part 1: {seeds.Min()}");
+}
+
+
+void Part2()
+{
+	var input = ParseInput();
+	var maps = input.GroupBy(a => a.category); // Group by category
+
+	// Create seed ranges
+	List<(long start, long end)> ranges = new List<(long start, long end)>();
+	for (int i = 0; i < seeds.Length; i += 2)
+		ranges.Add((seeds[i], seeds[i] + seeds[i + 1] - 1));
+
+	foreach (var cat in Enum.GetNames(typeof(Category))) // Get categories in order in enum
+	{
+		// Get maps for category
+		var map = maps.Where(m => m.Key == Enum.Parse<Category>(cat)).First().ToList().OrderBy(a => a.source).ToArray();
+
+		int rIndex = 0;
+		while (rIndex < ranges.Count) // Iterate through ranges
+		{
+			int mIndex = 0;
+			while (mIndex < map.Length) // Iterate through sorted maps
+			{
+				// Whole range low => next range
+				if (ranges[rIndex].end < map[mIndex].source)
+					break;
+
+				// Whole range high => nex map
+				if (ranges[rIndex].start >= map[mIndex].source + map[mIndex].length)
+				{
+					mIndex++;
+					continue;
+				}
+
+				// Whole range in => recompute and next range
+				if (ranges[rIndex].start >= map[mIndex].source && ranges[rIndex].end < map[mIndex].source + map[mIndex].length)
+				{
+					ranges[rIndex] = (map[mIndex].destination + (ranges[rIndex].start - map[mIndex].source), map[mIndex].destination + (ranges[rIndex].end - map[mIndex].source));
+					break;
+				}
+
+				// Low intersect => split, recompute higher and next range
+				if (ranges[rIndex].start < map[mIndex].source && ranges[rIndex].end < map[mIndex].source + map[mIndex].length)
+				{
+					ranges.Insert(rIndex + 1, (map[mIndex].destination, map[mIndex].destination + (ranges[rIndex].end - map[mIndex].source)));
+					ranges[rIndex] = (ranges[rIndex].start, map[mIndex].source - 1);
+					rIndex++; // Skip inserted range
+					break;
+				}
+
+				// High intersect => split, recompute lower and next range
+				if (ranges[rIndex].start >= map[mIndex].source && ranges[rIndex].end >= map[mIndex].source + map[mIndex].length)
+				{
+					ranges.Insert(rIndex + 1, (map[mIndex].source + map[mIndex].length, ranges[rIndex].end));
+					ranges[rIndex] = (map[mIndex].destination + (ranges[rIndex].start - map[mIndex].source), map[mIndex].destination + map[mIndex].length - 1);
+					break;
+				}
+
+				// Whole map in => split, recompute middle and next range
+				if (ranges[rIndex].start < map[mIndex].source && ranges[rIndex].end >= map[mIndex].source + map[mIndex].length)
+				{
+					ranges.Insert(rIndex + 1, (map[mIndex].source + map[mIndex].length, ranges[rIndex].end));
+					ranges.Insert(rIndex + 1, (map[mIndex].destination, map[mIndex].destination + map[mIndex].length - 1));
+					ranges[rIndex] = (ranges[rIndex].start, map[mIndex].source - 1);
+					rIndex++; // Skip inserted range
+					break;
+				}
+			}
+
+			rIndex++;
+		}
+	}
+
+	Console.WriteLine($"Part 2: {ranges.Min(r => r.start)}");
+}
+
+
+public enum Category
+{
+	seed_to_soil,
+	soil_to_fertilizer,
+	fertilizer_to_water,
+	water_to_light,
+	light_to_temperature,
+	temperature_to_humidity,
+	humidity_to_location
+}
