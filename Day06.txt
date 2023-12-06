@@ -1,0 +1,67 @@
+﻿
+Part1();
+
+Part2();
+
+Console.WriteLine("end");
+Console.ReadLine();
+
+
+int[][] ParseInput()
+{
+	var input = File.ReadAllLines("input.txt").Select(s => s.Replace("Time:", "").Replace("Distance:", "").Split(' ', StringSplitOptions.RemoveEmptyEntries)
+		.Select(n => int.Parse(n)).ToArray()).ToArray();
+
+	return input;
+}
+
+
+void Part1()
+{
+	var input = ParseInput();
+
+	int margin = 1;
+	for (int i = 0; i < input[0].Length; i++)
+	{
+		int dist = 0, time = 0;
+		while (dist <= input[1][i])
+		{
+			time++;
+			dist = (input[0][i] - time) * time;
+		}
+		margin *= input[0][i] - 2 * time + 1;
+	}
+
+	Console.WriteLine($"Part 1: {margin}");
+}
+
+
+void Part2()
+{
+	var input = ParseInput();
+
+	string timeS = "", distS = "";
+	for (int i = 0; i < input[0].Length; i++)
+	{
+		timeS += input[0][i].ToString();
+		distS += input[1][i].ToString();
+	}
+
+	long timeR = long.Parse(timeS);
+	long distR = long.Parse(distS);
+
+	// To find min time halve the time intervals
+	long min = 0, max = timeR;
+	while (min != max)
+	{
+		long half = min + (max - min) / 2;
+		if (distR < (timeR - half) * half)
+			max = half;
+		else
+			min = half + 1;
+	}
+
+	long margin = timeR - 2 * min + 1;
+
+	Console.WriteLine($"Part 2: {margin}");
+}
