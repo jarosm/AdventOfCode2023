@@ -1,0 +1,94 @@
+﻿
+Dictionary<string, (string left, string right)> nodes = new Dictionary<string, (string left, string right)>();
+char[] instructions;
+
+ParseInput();
+
+Part1();
+
+Part2();
+
+Console.WriteLine("end");
+Console.ReadLine();
+
+
+void ParseInput()
+{
+	var input = File.ReadAllLines("input.txt");
+
+	instructions = input[0].ToCharArray();
+	for (int i = 2; i < input.Length; i++)
+	{
+		var t = input[i].Replace(" = (", ",").Replace(" ", "").Replace(")", "").Split(',');
+		nodes.Add(t[0], (t[1], t[2]));
+	}
+}
+
+
+void Part1()
+{
+	int steps = 0, instr = 0;
+	string nextNode = "AAA";
+
+	while (nextNode != "ZZZ")
+	{
+		if (instructions[instr] == 'L')
+			nextNode = nodes[nextNode].left;
+		else
+			nextNode = nodes[nextNode].right;
+		steps++;
+		instr = (instr + 1) % instructions.Length;
+	}
+
+	Console.WriteLine($"Part 1: {steps}");
+}
+
+
+void Part2()
+{
+	string[] nextNode = nodes.Keys.Where(k => k.EndsWith("A")).ToArray();
+	long[] steps = new long[nextNode.Length];
+
+	for (int i = 0; i < nextNode.Length; i++)
+	{
+		int instr = 0;
+		while (!nextNode[i].EndsWith("Z"))
+		{
+			if (instructions[instr] == 'L')
+				nextNode[i] = nodes[nextNode[i]].left;
+			else
+				nextNode[i] = nodes[nextNode[i]].right;
+
+			steps[i]++;
+			instr = (instr + 1) % instructions.Length;
+		}
+	}
+
+	long lcm = steps[0];
+	for (int i = 1; i < steps.Length; i++)
+		lcm = GetLCM(lcm, steps[i]);
+
+	Console.WriteLine($"Part 2: {lcm}");
+}
+
+
+long GetGCD(long number1, long number2)
+{
+	long n1 = number1 > number2 ? number1 : number2;
+	long n2 = number1 < number2 ? number1 : number2;
+	long n = n1 % n2;
+	while (n != 0)
+	{
+		n1 = n2;
+		n2 = n;
+		n = n1 % n2;
+	}
+	return n2;
+}
+
+
+long GetLCM(long number1, long number2)
+{
+	long gcd = GetGCD(number1, number2);
+	return number1 / gcd * number2;
+}
