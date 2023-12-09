@@ -1,0 +1,73 @@
+﻿
+Part1();
+
+Part2();
+
+Console.WriteLine("end");
+Console.ReadLine();
+
+
+int[][] ParseInput()
+{
+	// Revers numbers for better work
+	var input = File.ReadAllLines("input.txt").Select(a => a.Split(' ').Select(b => int.Parse(b)).Reverse().ToArray()).ToArray();
+
+	return input;
+}
+
+
+void Part1()
+{
+	var input = ParseInput();
+
+	long sum = 0;
+	foreach (var sequence in input)
+	{
+		List<int[]> seq = new List<int[]>();
+		seq.Add(sequence);
+
+		while (!seq[0].All(b => b == 0))
+		{
+			var newSeq = new int[seq[0].Length - 1];
+			for (int i = 0; i < newSeq.Length; i++)
+				newSeq[i] = seq[0][i] - seq[0][i + 1];
+			seq.Insert(0, newSeq);
+		}
+
+		long s = 0;
+		for (int i = 1; i < seq.Count; i++)
+			s += seq[i][0];
+		sum += s;
+	}
+
+	Console.WriteLine($"Part 1: {sum}");
+}
+
+
+void Part2()
+{
+	var input = ParseInput();
+	input = input.Select(a => a.Reverse().ToArray()).ToArray(); // Reverse again - duh
+
+	long sum = 0;
+	foreach (var sequence in input)
+	{
+		List<int[]> seq = new List<int[]>();
+		seq.Add(sequence);
+
+		while (!seq[0].All(b => b == 0))
+		{
+			var newSeq = new int[seq[0].Length - 1];
+			for (int i = 0; i < newSeq.Length; i++)
+				newSeq[i] = seq[0][i + 1] - seq[0][i];
+			seq.Insert(0, newSeq);
+		}
+
+		long s = 0;
+		for (int i = 1; i < seq.Count; i++)
+			s = seq[i][0] - s;
+		sum += s;
+	}
+
+	Console.WriteLine($"Part 2: {sum}");
+}
