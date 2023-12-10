@@ -1,0 +1,175 @@
+﻿
+using System.Numerics;
+using System.Text.RegularExpressions;
+
+Vector2[] dirs = new Vector2[] { new Vector2(0, -1), new Vector2(0, 1), new Vector2(-1, 0), new Vector2(1, 0) }; // North (0), South (1), West (2), East (3)
+Dictionary<(char, int), int> newDirs = new Dictionary<(char, int), int>()
+{
+	{ ('|', 0 ), 0 },
+	{ ('|', 1 ), 1 },
+
+	{ ('-', 2 ), 2 },
+	{ ('-', 3 ), 3 },
+
+	{ ('L', 1 ), 3 },
+	{ ('L', 2 ), 0 },
+
+	{ ('J', 1 ), 2 },
+	{ ('J', 3 ), 0 },
+
+	{ ('7', 0 ), 2 },
+	{ ('7', 3 ), 1 },
+
+	{ ('F', 0 ), 3 },
+	{ ('F', 2 ), 1 }
+};
+
+Part1();
+
+Part2();
+
+Console.WriteLine("end");
+Console.ReadLine();
+
+
+char[][] ParseInput()
+{
+	var input = File.ReadAllLines("input.txt").Select(a => a.ToCharArray()).ToArray();
+
+	return input;
+}
+
+
+void Part1()
+{
+	var map = ParseInput();
+
+	//FindS(map);
+
+	// Input
+	map[107][110] = 'F';
+	Vector2 pos1 = new Vector2(110, 107);
+	Vector2 pos2 = new Vector2(110, 107);
+	int dir1 = 3;
+	int dir2 = 1;
+
+	int steps = 0;
+	while (pos1 != pos2 || steps == 0)
+	{
+		steps++;
+		pos1 += dirs[dir1];
+		pos2 += dirs[dir2];
+		dir1 = newDirs[(map[(int)pos1.Y][(int)pos1.X], dir1)];
+		dir2 = newDirs[(map[(int)pos2.Y][(int)pos2.X], dir2)];
+	}
+
+	Console.WriteLine($"Part 1: {steps}");
+}
+
+
+void Part2()
+{
+	var map = ParseInput();
+
+	// Input
+	map[107][110] = 'F';
+	Vector2 pos1 = new Vector2(110, 107);
+	Vector2 pos2 = new Vector2(110, 107);
+	int dir1 = 3;
+	int dir2 = 1;
+
+	HashSet<Vector2> visited = new HashSet<Vector2> ();
+	visited.Add(pos1);
+	while (true)
+	{
+		pos1 += dirs[dir1];
+		pos2 += dirs[dir2];
+		dir1 = newDirs[(map[(int)pos1.Y][(int)pos1.X], dir1)];
+		dir2 = newDirs[(map[(int)pos2.Y][(int)pos2.X], dir2)];
+
+		if (pos1 != pos2)
+		{
+			visited.Add(pos1);
+			visited.Add(pos2);
+		}
+		else
+		{
+			visited.Add(pos1);
+			break;
+		}
+	}
+
+	// Mark nonvisited
+	for (int y = 0; y < map.Length; y++)
+	{
+		for (int x = 0; x < map[y].Length; x++)
+		{
+			if (!visited.Contains(new Vector2(x, y)))
+				map[y][x] = '.';
+		}
+	}
+
+	// Replace F-*7 and L-*J with "" and all F-*J and L-*7 with "|" and count
+	int count = 0;
+	string[] rMap = new string[map.Length];
+	for (int y = 0; y < map.Length; y++)
+	{
+		rMap[y] = new string(map[y]);
+		rMap[y] = Regex.Replace(rMap[y], @"F-*7", "");
+		rMap[y] = Regex.Replace(rMap[y], @"L-*J", "");
+		rMap[y] = Regex.Replace(rMap[y], @"F-*J", "|");
+		rMap[y] = Regex.Replace(rMap[y], @"L-*7", "|");
+
+		int interior = 0;
+		for (int x = 0; x < rMap[y].Length; x++)
+		{
+			if (rMap[y][x] == '|')
+				interior++;
+			if (interior % 2 == 1 && rMap[y][x] == '.')
+				count++;
+		}
+	}
+
+	Console.WriteLine($"Part 2: {count}");
+}
+
+
+// Find S and draw surrounding pipes
+void FindS(char[][] map)
+{
+	for (int r = 0; r < map.Length; r++)
+	{
+		for (int c = 0;  c < map[r].Length; c++)
+		{
+			if (map[r][c] == 'S')
+			{
+				Console.WriteLine($"y: {r} ; x: {c}");
+				for (int y = r - 1; y <= r + 1; y++)
+				{
+					for (int x = c - 1; x <= c + 1; x++)
+					{
+						if (x >= 0 && y >= 0 && x < map[0].Length && y < map.Length)
+							Console.Write(map[y][x]);
+					}
+					Console.WriteLine();
+				}
+			}
+		}
+	}
+	Console.WriteLine();
+}
+
+
+// Draw map
+void DrawMap(char[][] map)
+{
+	for (int r = 0; r < map.Length; r++)
+	{
+		for (int c = 0; c < map[r].Length; c++)
+		{
+			Console.Write(map[r][c]);
+		}
+		Console.WriteLine();
+	}
+	Console.WriteLine();
+}
