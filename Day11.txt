@@ -1,0 +1,83 @@
+﻿
+using System.Numerics;
+
+Part1();
+
+Part2();
+
+Console.WriteLine("end");
+Console.ReadLine();
+
+
+List<Vector2> ParseInput(bool part2 = false)
+{
+	var input = File.ReadAllLines("input.txt");
+
+	// Get expansion offsets for X
+	ulong[] offsetX = new ulong[input[0].Length];
+	ulong offset = 0;
+	for (int x = 1; x < input[0].Length; x++)
+	{
+		bool empty = true;
+		for (int y = 0; y < input.Length; y++)
+		{
+			if (input[y][x] != '.')
+			{
+				empty = false;
+				break;
+			}
+		}
+		if (empty)
+			offset = part2 ? offset + 999_999 : offset + 1;
+		offsetX[x] = offset;
+	}
+
+	List<Vector2> galaxies = new List<Vector2>();
+	offset = 0;
+	for (int y = 0; y < input.Length; y++)
+	{
+		if (input[y].All(a => a == '.')) // Empty row
+		{
+			offset = part2 ? offset + 999_999 : offset + 1;
+			continue;
+		}
+
+		for (int x = 0; x < input[y].Length; x++)
+		{
+			if (input[y][x] == '#')
+				galaxies.Add(new Vector2((ulong)x + offsetX[x], (ulong)y + offset));
+		}
+	}
+
+	return galaxies;
+}
+
+
+void Part1()
+{
+	var galaxies = ParseInput();
+
+	long shortestPathsLength = 0;
+	for (int i = 0; i < galaxies.Count; i++)
+	{
+		for (int j = i; j < galaxies.Count; j++)
+			shortestPathsLength += (long)Math.Abs(galaxies[i].X - galaxies[j].X) + (long)Math.Abs(galaxies[i].Y - galaxies[j].Y);
+	}
+
+	Console.WriteLine($"Part 1: {shortestPathsLength}");
+}
+
+
+void Part2()
+{
+	var galaxies = ParseInput(true);
+
+	long shortestPathsLength = 0;
+	for (int i = 0; i < galaxies.Count; i++)
+	{
+		for (int j = i; j < galaxies.Count; j++)
+			shortestPathsLength += (long)Math.Abs(galaxies[i].X - galaxies[j].X) + (long)Math.Abs(galaxies[i].Y - galaxies[j].Y);
+	}
+
+	Console.WriteLine($"Part 2: {shortestPathsLength}");
+}
