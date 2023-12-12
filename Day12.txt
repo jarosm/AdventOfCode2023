@@ -1,0 +1,152 @@
+﻿
+// Partial:		^[\.\?]*[#\?]{1}[\.\?]+[#\?]{6}[\.\?]+[#\?]{5}[\.\?]*$
+// Exact:		^\.*#{1}\.+#{6}\.+#{5}\.*$
+
+using System.Collections.Immutable;
+using System.Text.RegularExpressions;
+
+using Cache = System.Collections.Generic.Dictionary<(string, System.Collections.Immutable.ImmutableStack<int>), long>;
+
+Part1();
+
+Part2();
+
+Console.WriteLine("end");
+Console.ReadLine();
+
+
+string[][] ParseInput()
+{
+	var input = File.ReadAllLines("input.txt").Select(s => s.Split(' ')).ToArray();
+
+	return input;
+}
+
+
+void Part1()
+{
+	var input = ParseInput();
+
+	int count = 0;
+	foreach (var line in input)
+	{
+		string partial = "^[\\.\\?]*[#\\?]{" + line[1].Replace(",", "}[\\.\\?]+[#\\?]{") + "}[\\.\\?]*$";
+		string exact = "^\\.*#{" + line[1].Replace(",", "}\\.+#{") + "}\\.*$";
+
+		count += GetMatches(line[0], 0, partial, exact);
+	}
+
+	Console.WriteLine($"Part 1: {count}");
+}
+
+
+void Part2()
+{
+	var input = ParseInput();
+
+	long count = 0;
+	foreach (var line in input)
+	{
+		string l0 = string.Join('?', Enumerable.Repeat(line[0], 5));
+		int[] l1 = string.Join(',', Enumerable.Repeat(line[1], 5)).Split(',').Select(int.Parse).ToArray();
+
+		count += Compute(l0, ImmutableStack.CreateRange(l1.Reverse()), new Cache());
+	}
+
+	Console.WriteLine($"Part 2: {count}");
+}
+
+
+int GetMatches(string row, int index, string partial, string exact)
+{
+	int count = 0;
+
+	if (index >= row.Length)
+		return Regex.Match(row, exact).Success ? 1 : 0;
+
+	int pos = row.IndexOf('?', index);
+	if (pos == -1)
+		return Regex.Match(row, exact).Success ? 1 : 0;
+
+
+	string r1 = row.Substring(0, pos) + "." + (pos + 1 < row.Length ? row.Substring(pos + 1) : "");
+	if (Regex.Match(r1, partial).Success)
+		count += GetMatches(r1, pos + 1, partial, exact);
+
+	string r2 = row.Substring(0, pos) + "#" + (pos + 1 < row.Length ? row.Substring(pos + 1) : "");
+	if (Regex.Match(r2, partial).Success)
+		count += GetMatches(r2, pos + 1, partial, exact);
+
+	return count;
+}
+
+
+long Compute(string pattern, ImmutableStack<int> nums, Cache cache)
+{
+	if (!cache.ContainsKey((pattern, nums)))
+	{
+		cache[(pattern, nums)] = Dispatch(pattern, nums, cache);
+	}
+	return cache[(pattern, nums)];
+}
+
+long Dispatch(string pattern, ImmutableStack<int> nums, Cache cache)
+{
+	return pattern.FirstOrDefault() switch
+	{
+		'.' => ProcessDot(pattern, nums, cache),
+		'?' => ProcessQuestion(pattern, nums, cache),
+		'#' => ProcessHash(pattern, nums, cache),
+		_ => ProcessEnd(pattern, nums, cache),
+	};
+}
+
+long ProcessEnd(string _, ImmutableStack<int> nums, Cache __)
+{
+	// the good case is when there are no numbers left at the end of the pattern
+	return nums.Any() ? 0 : 1;
+}
+
+long ProcessDot(string pattern, ImmutableStack<int> nums, Cache cache)
+{
+	// consume one spring and recurse
+	return Compute(pattern[1..], nums, cache);
+}
+
+long ProcessQuestion(string pattern, ImmutableStack<int> nums, Cache cache)
+{
+	// recurse both ways
+	return Compute("." + pattern[1..], nums, cache) + Compute("#" + pattern[1..], nums, cache);
+}
+
+long ProcessHash(string pattern, ImmutableStack<int> nums, Cache cache)
+{
+	// take the first number and consume that many dead springs, recurse
+
+	if (!nums.Any())
+	{
+		return 0; // no more numbers left, this is no good
+	}
+
+	var n = nums.Peek();
+	nums = nums.Pop();
+
+	var potentiallyDead = pattern.TakeWhile(s => s == '#' || s == '?').Count();
+
+	if (potentiallyDead < n)
+	{
+		return 0; // not enough dead springs 
+	}
+	else if (pattern.Length == n)
+	{
+		return Compute("", nums, cache); // end of pattern
+	}
+	else if (pattern[n] == '#')
+	{
+		return 0; // dead spring follows the range -> not good
+	}
+	else
+	{
+		return Compute(pattern[(n + 1)..], nums, cache);
+	}
+}
