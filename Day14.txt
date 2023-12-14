@@ -1,0 +1,123 @@
+﻿
+using System.Numerics;
+using System.Security.Cryptography;
+
+Vector2[] dirs = new Vector2[] { new Vector2(0, -1), new Vector2(-1, 0), new Vector2(0, 1), new Vector2(1, 0) }; // North (0), West (1), South (2), East (3)
+int maxX = 0, maxY = 0;
+
+Part1();
+
+Part2();
+
+Console.WriteLine("end");
+Console.ReadLine();
+
+
+Dictionary<Vector2, int> ParseInput()
+{
+	var input = File.ReadAllLines("input.txt").Select((a, y) => a.ToCharArray()).ToArray();
+
+	Dictionary<Vector2, int> rocks = new Dictionary<Vector2, int>();
+	maxX = input[0].Length;
+	maxY = input.Length;
+	for (int y = 0; y < maxY; y++)
+		for (int x = 0; x < maxX; x++)
+			if (input[y][x] == 'O')
+				rocks.Add(new Vector2(x, y), 1);
+			else if (input[y][x] == '#')
+				rocks.Add(new Vector2(x, y), 2);
+
+	return rocks;
+}
+
+
+void Part1()
+{
+	var rocks = ParseInput();
+
+	for (int y = 0; y < maxY; y++)
+	{
+		for (int x = 0; x < maxX; x++)
+		{
+			Vector2 rock = new Vector2 (x, y);
+			if (rocks.ContainsKey(rock) && rocks[rock] == 1)
+			{
+				Vector2 newRock = rock + dirs[0];
+				while (newRock.Y >= 0 && (!rocks.ContainsKey(newRock) || rocks[newRock] == 0))
+				{
+					rocks[rock] = 0;
+					rocks[newRock] = 1;
+					rock = newRock;
+					newRock = rock + dirs[0];
+				}
+			}
+		}
+	}
+
+	int sum = rocks.Where(r => r.Value == 1).Select(r => r.Key).Sum(k => maxY - (int)k.Y);
+
+	Console.WriteLine($"Part 1: {sum}");
+}
+
+
+void Part2()
+{
+	var rocks = ParseInput();
+
+	Dictionary<string, int> cache = new Dictionary<string, int>();
+	cache[GetState(rocks)] = 0;
+
+	int cycle = 0, repeatStart = 0;
+	while (true)
+	{
+		int counter = 0;
+		foreach (var dir in dirs)
+		{
+			counter++;
+
+			// Order of roll is important
+			for (int y = counter == 3 ? maxY - 1 : 0; counter == 3 ? y >= 0 : y < maxY; y = counter == 3 ? y - 1 : y + 1)
+			{
+				for (int x = counter == 4 ? maxX - 1 : 0; counter == 4 ? x >= 0 : x < maxX; x = counter == 4 ? x - 1 : x + 1)
+				{
+					Vector2 rock = new Vector2(x, y);
+					if (rocks.ContainsKey(rock) && rocks[rock] == 1)
+					{
+						Vector2 newRock = rock + dir;
+						while (newRock.Y >= 0 && newRock.X >= 0 && newRock.Y < maxY && newRock.X < maxX && (!rocks.ContainsKey(newRock) || rocks[newRock] == 0))
+						{
+							rocks[rock] = 0;
+							rocks[newRock] = 1;
+							rock = newRock;
+							newRock = rock + dir;
+						}
+					}
+				}
+			}
+		}		
+
+		cycle++;
+		string state = GetState(rocks);
+		if (cache.ContainsKey(state))
+		{
+			repeatStart = cache[state];
+			break;
+		}
+		else
+			cache[state] = cycle;
+	}
+
+	int[][] lastState = cache.Where(s => s.Value == repeatStart + ((1_000_000_000 - repeatStart) % (cycle - repeatStart))).First().Key
+		.Split(';').Select(s => s.Split(',').Select(s => int.Parse(s)).ToArray()).ToArray();
+	int sum = 0;
+	for (int i = 0; i < lastState.Length; i++)
+		sum += maxY - lastState[i][0];
+
+	Console.WriteLine($"Part 2: {sum}");
+}
+
+
+string GetState(Dictionary<Vector2, int> rocks)
+{
+	return string.Join(';', rocks.Where(r => r.Value == 1).Select(r => r.Key).OrderBy(k => k.Y).ThenBy(k => k.X).Select(k => k.Y.ToString() + "," + k.X.ToString()).ToArray());
+}
