@@ -1,0 +1,153 @@
+﻿
+Part1();
+
+Part2();
+
+Console.WriteLine("end");
+Console.ReadLine();
+
+
+List<string[]> ParseInput()
+{
+	var input = File.ReadAllLines("input.txt");
+
+	List<string[]> patterns = new List<string[]>();
+	List<string> pattern = new List<string>();
+	foreach (string line in input)
+	{
+		if (line.Length == 0)
+		{
+			patterns.Add(pattern.ToArray());
+			pattern = new List<string>();
+			continue;
+		}
+		pattern.Add(line);
+	}
+	patterns.Add(pattern.ToArray());
+
+	return patterns;
+}
+
+
+void Part1()
+{
+	var patterns = ParseInput();
+
+	long total = 0;
+	foreach (var pattern in patterns)
+	{
+		int index = GetReflectionLine(pattern);
+		if (index >= 0)
+		{
+			total += 100 * (index + 1);
+			continue;
+		}
+
+		string[] transposed = new string[pattern[0].Length];
+		for (int i = 0; i < pattern[0].Length; i++)
+		{
+			for (int j = 0; j < pattern.Length; j++)
+				transposed[i] += pattern[j][i];
+		}
+		index = GetReflectionLine(transposed);
+		if (index >= 0)
+			total += index + 1;
+	}
+
+	Console.WriteLine($"Part 1: {total}");
+}
+
+
+void Part2()
+{
+	var patterns = ParseInput();
+
+	long total = 0;
+	foreach (var pattern in patterns)
+	{
+		int index = GetReflectionLine(pattern, true);
+		if (index >= 0)
+		{
+			total += 100 * (index + 1);
+			continue;
+		}
+
+		string[] transposed = new string[pattern[0].Length];
+		for (int i = 0; i < pattern[0].Length; i++)
+		{
+			for (int j = 0; j < pattern.Length; j++)
+				transposed[i] += pattern[j][i];
+		}
+		index = GetReflectionLine(transposed, true);
+		if (index >= 0)
+			total += index + 1;
+	}
+
+	Console.WriteLine($"Part 2: {total}");
+}
+
+
+int GetReflectionLine(string[] pattern, bool part2 = false)
+{
+	// Get possible mirror
+	int index = 0;
+	List<int> possibleMirrors = new List<int>();
+	while (index < pattern.Length - 1)
+	{
+		if (pattern[index] == pattern[index + 1])
+			possibleMirrors.Add(index);
+		else
+		{
+			if (part2 && CountDifferences(pattern[index], pattern[index + 1]) == 1)
+				possibleMirrors.Add(index);
+		}
+		index++;
+	}
+
+	foreach (int pm in possibleMirrors)
+	{
+		int i = 0, diffs = 0;
+		bool fullMatch = true;
+		while (pm - i >= 0 && pm + i + 1 < pattern.Length)
+		{
+			if (pattern[pm - i] != pattern[pm + i + 1])
+			{
+				if (part2)
+				{
+					diffs += CountDifferences(pattern[pm - i], pattern[pm + i + 1]);
+					if (diffs > 1)
+					{
+						fullMatch = false;
+						break;
+					}
+				}
+				else
+				{
+					fullMatch = false;
+					break;
+				}
+			}
+			i++;
+		}
+
+		if (fullMatch && part2 && diffs != 1)
+			continue;
+
+        if (fullMatch)
+			return pm;
+	}
+
+	return -1;
+}
+
+
+int CountDifferences(string s1, string s2)
+{
+	int count = 0;
+	for (int i = 0; i < s1.Length; i++)
+	{
+		if (s1[i] != s2[i])
+			count++;
+	}
+	return count;
+}
