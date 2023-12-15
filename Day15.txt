@@ -1,0 +1,92 @@
+﻿
+using System.Security.Cryptography.X509Certificates;
+
+Part1();
+
+Part2();
+
+Console.WriteLine("end");
+Console.ReadLine();
+
+
+string[] ParseInput()
+{
+	var input = File.ReadAllLines("input.txt").Select(s => s.Split(',')).ToArray();
+
+	return input[0];
+}
+
+
+void Part1()
+{
+	var input = ParseInput();
+
+	int sum = 0;
+	foreach (var s in input)
+		sum += Hash(s);
+
+	Console.WriteLine($"Part 1: {sum}");
+}
+
+
+void Part2()
+{
+	var input = ParseInput();
+
+	Dictionary<string, Lens>[] boxes = new Dictionary<string, Lens>[256];
+	for (int i = 0; i < 256; i++)
+		boxes[i] = new Dictionary<string, Lens>();
+
+	foreach (var step in input)
+	{
+		if (step.Contains("-"))
+		{
+			string label = step.Substring(0, step.Length - 1);
+			int boxIndex = Hash(label);
+			if (boxes[boxIndex].ContainsKey(label))
+			{
+				int oldSlot = boxes[boxIndex][label].slot;
+				boxes[boxIndex].Remove(label);
+				var lenses = boxes[boxIndex].Where(kv => kv.Value.slot > oldSlot).ToArray();
+				foreach (var lens in lenses)
+					lens.Value.slot--;
+			}
+		}
+        else
+        {
+			string label = step.Split('=')[0];
+			int boxIndex = Hash(label);
+			if (boxes[boxIndex].ContainsKey(label))
+			{
+				boxes[boxIndex][label].focalLength = int.Parse(step.Split('=')[1]);
+			}
+			else
+			{
+				int slot = boxes[boxIndex].Count > 0 ? boxes[boxIndex].Max(kv => kv.Value.slot) + 1 : 1;
+				boxes[boxIndex].Add(label, new Lens() { focalLength = int.Parse(step.Split('=')[1]), slot = slot });
+			}
+		}
+	}
+
+	int power = 0;
+	for (int i = 0; i < 256; i++)
+		power += (i + 1) * boxes[i].Sum(kv => kv.Value.focalLength * kv.Value.slot);
+
+	Console.WriteLine($"Part 2: {power}");
+}
+
+
+int Hash(string stoh)
+{
+	int current = 0;
+	foreach (char c in stoh)
+		current = ((current + c) * 17) % 256;
+	return current;
+}
+
+
+public class Lens
+{
+	public int focalLength {  get; set; }
+	public int slot { get; set; }
+}
