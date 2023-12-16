@@ -1,0 +1,137 @@
+﻿
+using System.Numerics;
+
+Dictionary<Vector2, char> map = new Dictionary<Vector2, char>();
+Vector2[] dirs = new Vector2[] { new Vector2(0, -1), new Vector2(-1, 0), new Vector2(0, 1), new Vector2(1, 0) }; // North (0), West (1), South (2), East (3)
+int maxX = 0, maxY = 0;
+
+ParseInput();
+
+Part1();
+
+Part2();
+
+Console.WriteLine("end");
+Console.ReadLine();
+
+
+void ParseInput()
+{
+	var input = File.ReadAllLines("input.txt");
+
+	maxY = input.Length;
+	maxX = input[0].Length;
+	for (int y = 0; y < maxY; y++)
+	{
+		for (int x = 0; x < maxX; x++)
+		{
+			if (input[y][x] != '.')
+				map.Add(new Vector2(x, y), input[y][x]);
+		}
+	}
+}
+
+
+void Part1()
+{
+	Console.WriteLine($"Part 1: {GetEnergizedTiles(new Vector2(0, 0), 3)}");
+}
+
+
+void Part2()
+{
+	int maxCount = 0;
+	for (int x = 0; x < maxX; x++)
+	{
+		int count = GetEnergizedTiles(new Vector2(x, 0), 2);
+		if (count > maxCount)
+			maxCount = count;
+		count = GetEnergizedTiles(new Vector2(x, maxY - 1), 0);
+		if (count > maxCount)
+			maxCount = count;
+	}
+	for (int y = 0; y < maxY; y++)
+	{
+		int count = GetEnergizedTiles(new Vector2(0, y), 3);
+		if (count > maxCount)
+			maxCount = count;
+		count = GetEnergizedTiles(new Vector2(maxX - 1, y), 1);
+		if (count > maxCount)
+			maxCount = count;
+	}
+
+	Console.WriteLine($"Part 2: {maxCount}");
+}
+
+
+int GetEnergizedTiles(Vector2 start, int direction)
+{
+	Queue<(Vector2 position, int direction)> queue = new Queue<(Vector2 position, int direction)>();
+	HashSet<(Vector2 position, int direction)> visited = new HashSet<(Vector2 position, int direction)>();
+
+	queue.Enqueue((start, direction));
+	while (queue.Count > 0)
+	{
+		var pos = queue.Dequeue();
+		if (pos.position.X >= 0 && pos.position.Y >= 0 && pos.position.X < maxX && pos.position.Y < maxY)
+		{
+			if (visited.Contains(pos))
+				continue;
+			visited.Add(pos);
+
+			int dir = pos.direction;
+			if (map.ContainsKey(pos.position))
+			{
+				char mirror = map[pos.position];
+				switch (mirror)
+				{
+					case '/':
+						if (pos.direction == 0)
+							dir = 3;
+						else if (pos.direction == 1)
+							dir = 2;
+						else if (pos.direction == 2)
+							dir = 1;
+						else
+							dir = 0;
+						break;
+
+					case '\\':
+						if (pos.direction == 0)
+							dir = 1;
+						else if (pos.direction == 1)
+							dir = 0;
+						else if (pos.direction == 2)
+							dir = 3;
+						else
+							dir = 2;
+						break;
+
+					case '-':
+						if (pos.direction == 1 || pos.direction == 3)
+							dir = pos.direction;
+						else // Split
+						{
+							dir = 1;
+							queue.Enqueue((pos.position + dirs[3], 3));
+						}
+						break;
+
+					case '|':
+						if (pos.direction == 0 || pos.direction == 2)
+							dir = pos.direction;
+						else // Split
+						{
+							dir = 0;
+							queue.Enqueue((pos.position + dirs[2], 2));
+						}
+						break;
+				}
+			}
+
+			queue.Enqueue((pos.position + dirs[dir], dir));
+		}
+	}
+
+	return visited.Select(p => p.position).Distinct().Count();
+}
