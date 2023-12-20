@@ -1,0 +1,74 @@
+﻿
+Part1();
+
+Part2();
+
+Console.WriteLine("end");
+Console.ReadLine();
+
+
+string[][] ParseInput()
+{
+	var input = File.ReadAllLines("input.txt").Select(s => s.Split(' ')).ToArray();
+
+	return input;
+}
+
+
+void Part1()
+{
+	var input = ParseInput();
+
+	(int x, int y) prev = (0, 0);
+	int area = 0;
+	for (int i = 0; i < input.Length; i++)
+	{
+		(int x, int y) next;
+		if (input[i][0] == "R")
+			next = (prev.x + int.Parse(input[i][1]), prev.y);
+		else if (input[i][0] == "L")
+			next = (prev.x - int.Parse(input[i][1]), prev.y);
+		else if (input[i][0] == "D")
+			next = (prev.x, prev.y + int.Parse(input[i][1]));
+		else
+			next = (prev.x, prev.y - int.Parse(input[i][1]));
+
+		area += prev.x * next.y - next.x * prev.y + int.Parse(input[i][1]);
+		prev = next;
+	}
+
+	area = area / 2 + 1;
+
+	Console.WriteLine($"Part 1: {area}");
+}
+
+
+void Part2()
+{
+	var input = ParseInput();
+
+	(long x, long y) prev = (0, 0);
+	long area = 0;
+	for (int i = 0; i < input.Length; i++)
+	{
+		(long x, long y) next;
+		long dist = Convert.ToInt64(input[i][2].Substring(2, 5), 16);
+		string dir = input[i][2].Substring(7, 1);
+
+		if (dir == "0")
+			next = (prev.x + dist, prev.y);
+		else if (dir == "2")
+			next = (prev.x - dist, prev.y);
+		else if (dir == "1")
+			next = (prev.x, prev.y + dist);
+		else
+			next = (prev.x, prev.y - dist);
+
+		area += prev.x * next.y - next.x * prev.y + dist;
+		prev = next;
+	}
+
+	area = area / 2 + 1;
+
+	Console.WriteLine($"Part 2: {area}");
+}
