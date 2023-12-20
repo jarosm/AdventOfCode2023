@@ -1,0 +1,477 @@
+﻿
+Part1();
+
+Part2();
+
+Console.WriteLine("end");
+Console.ReadLine();
+
+
+(Dictionary<string, List<Rule>> workflows, List<Part> parts) ParseInput()
+{
+	var input = File.ReadAllLines("input.txt");
+
+	List<Part> parts = new List<Part>();
+	Dictionary<string, List<Rule>> workflows = new Dictionary<string, List<Rule>>();
+
+	foreach (var line in input)
+	{		
+		if (line.Contains('=')) // Parts
+		{
+			string[] categories = line.TrimStart('{').TrimEnd('}').Split(',');
+			Part part = new Part() { x = int.Parse(categories[0].Split('=')[1]), m = int.Parse(categories[1].Split('=')[1]), a = int.Parse(categories[2].Split('=')[1]), s = int.Parse(categories[3].Split('=')[1]) };
+			parts.Add(part);
+		}
+        else if (line.Length > 0) // Workflows
+		{
+			string[] fl = line.TrimEnd('}').Split('{');
+
+			List<Rule> rules = new List<Rule>();
+			string[] r = fl[1].Split(",");
+			for (int i = 0; i < r.Length; i++)
+			{
+				if (r[i].Contains(':'))
+				{
+					string[] rt = r[i].Split(":");
+					if (rt[0].Contains('>'))
+					{
+						string[] c = rt[0].Split(">");
+						rules.Add(new Rule() { category = c[0], lower = false, higher = true, value = int.Parse(c[1]), destination = rt[1] });
+					}
+					else
+					{
+						string[] c = rt[0].Split("<");
+						rules.Add(new Rule() { category = c[0], lower = true, higher = false, value = int.Parse(c[1]), destination = rt[1] });
+					}
+				}
+				else
+					rules.Add(new Rule() { category = "", lower = false, higher = false, value = 0, destination = r[i] });
+			}
+
+			workflows.Add(fl[0], rules);
+		}
+    }
+
+	return (workflows, parts);
+}
+
+
+void Part1()
+{
+	var input = ParseInput();
+
+	List<Part> accepted = new List<Part>();
+	while (input.parts.Count > 0)
+	{
+		var part = input.parts[0];
+		input.parts.RemoveAt(0);
+
+		string wf = "in";
+		while (true)
+		{
+			var rules = input.workflows[wf];
+			bool nextPart = false;
+
+			for (int i = 0; i < rules.Count; i++)
+			{
+				if (rules[i].higher) // compare part cat > number
+				{
+					if (rules[i].category == "x")
+					{
+						if (part.x > rules[i].value)
+						{
+							if (rules[i].destination == "A") // accept
+							{
+								accepted.Add(part);
+								nextPart = true;
+								break;
+							}
+							else if (rules[i].destination == "R") // reject
+							{
+								nextPart = true;
+								break;
+							}
+							else // next workflow
+							{
+								wf = rules[i].destination;
+								break;
+							}
+						}
+					}
+					else if (rules[i].category == "m")
+					{
+
+						if (part.m > rules[i].value)
+						{
+							if (rules[i].destination == "A") // accept
+							{
+								accepted.Add(part);
+								nextPart = true;
+								break;
+							}
+							else if (rules[i].destination == "R") // reject
+							{
+								nextPart = true;
+								break;
+							}
+							else // next workflow
+							{
+								wf = rules[i].destination;
+								break;
+							}
+						}
+					}
+					else if (rules[i].category == "a")
+					{
+
+						if (part.a > rules[i].value)
+						{
+							if (rules[i].destination == "A") // accept
+							{
+								accepted.Add(part);
+								nextPart = true;
+								break;
+							}
+							else if (rules[i].destination == "R") // reject
+							{
+								nextPart = true;
+								break;
+							}
+							else // next workflow
+							{
+								wf = rules[i].destination;
+								break;
+							}
+						}
+					}
+					else
+					{
+
+						if (part.s > rules[i].value)
+						{
+							if (rules[i].destination == "A") // accept
+							{
+								accepted.Add(part);
+								nextPart = true;
+								break;
+							}
+							else if (rules[i].destination == "R") // reject
+							{
+								nextPart = true;
+								break;
+							}
+							else // next workflow
+							{
+								wf = rules[i].destination;
+								break;
+							}
+						}
+					}
+				}
+				else if (rules[i].lower) // compare part cat < number
+				{
+					if (rules[i].category == "x")
+					{
+						if (part.x < rules[i].value)
+						{
+							if (rules[i].destination == "A") // accept
+							{
+								accepted.Add(part);
+								nextPart = true;
+								break;
+							}
+							else if (rules[i].destination == "R") // reject
+							{
+								nextPart = true;
+								break;
+							}
+							else // next workflow
+							{
+								wf = rules[i].destination;
+								break;
+							}
+						}
+					}
+					else if (rules[i].category == "m")
+					{
+
+						if (part.m < rules[i].value)
+						{
+							if (rules[i].destination == "A") // accept
+							{
+								accepted.Add(part);
+								nextPart = true;
+								break;
+							}
+							else if (rules[i].destination == "R") // reject
+							{
+								nextPart = true;
+								break;
+							}
+							else // next workflow
+							{
+								wf = rules[i].destination;
+								break;
+							}
+						}
+					}
+					else if (rules[i].category == "a")
+					{
+
+						if (part.a < rules[i].value)
+						{
+							if (rules[i].destination == "A") // accept
+							{
+								accepted.Add(part);
+								nextPart = true;
+								break;
+							}
+							else if (rules[i].destination == "R") // reject
+							{
+								nextPart = true;
+								break;
+							}
+							else // next workflow
+							{
+								wf = rules[i].destination;
+								break;
+							}
+						}
+					}
+					else
+					{
+
+						if (part.s < rules[i].value)
+						{
+							if (rules[i].destination == "A") // accept
+							{
+								accepted.Add(part);
+								nextPart = true;
+								break;
+							}
+							else if (rules[i].destination == "R") // reject
+							{
+								nextPart = true;
+								break;
+							}
+							else // next workflow
+							{
+								wf = rules[i].destination;
+								break;
+							}
+						}
+					}
+				}
+				else if (rules[i].destination == "A") // accept
+				{
+					accepted.Add(part);
+					nextPart = true;
+					break;
+				}
+				else if (rules[i].destination == "R") // reject
+				{
+					nextPart = true;
+					break;
+				}
+				else // next workflow
+				{
+					wf = rules[i].destination;
+					break;
+				}
+			}
+
+			if (nextPart)
+				break;
+		}
+	}
+
+	Console.WriteLine($"Part 1: {accepted.Sum(p => p.x + p.m + p.a + p.s)}");
+}
+
+
+void Part2()
+{
+	var input = ParseInput();
+
+	Console.WriteLine($"Part 2: {GetCombinations(((1, 4000), (1, 4000), (1, 4000), (1, 4000)), input.workflows, "in", 0)}");
+}
+
+
+ulong GetCombinations(((ulong lower, ulong higher) x, (ulong lower, ulong higher) m, (ulong lower, ulong higher) a, (ulong lower, ulong higher) s) ranges, Dictionary<string, List<Rule>> workflows, string workflow, int ruleIndex)
+{
+	ulong combinations = 0;
+
+	var rule = workflows[workflow][ruleIndex];
+
+	if (rule.higher)
+	{
+		(ulong lower, ulong higher) low = (0, 0);
+		(ulong lower, ulong higher) high = (0, 0);
+
+		if (rule.category == "x")
+		{
+			if (ranges.x.lower > (ulong)rule.value)
+				high = ranges.x;
+			else if (ranges.x.higher <= (ulong)rule.value)
+				low = ranges.x;
+			else
+			{
+				low = (ranges.x.lower, (ulong)rule.value);
+				high = ((ulong)rule.value + 1, ranges.x.higher);
+			}
+		}
+		else if (rule.category == "m")
+		{
+			if (ranges.m.lower > (ulong)rule.value)
+				high = ranges.m;
+			else if (ranges.m.higher <= (ulong)rule.value)
+				low = ranges.m;
+			else
+			{
+				low = (ranges.m.lower, (ulong)rule.value);
+				high = ((ulong)rule.value + 1, ranges.m.higher);
+			}
+		}
+		else if (rule.category == "a")
+		{
+			if (ranges.a.lower > (ulong)rule.value)
+				high = ranges.a;
+			else if (ranges.a.higher <= (ulong)rule.value)
+				low = ranges.a;
+			else
+			{
+				low = (ranges.a.lower, (ulong)rule.value);
+				high = ((ulong)rule.value + 1, ranges.a.higher);
+			}
+		}
+		else
+		{
+			if (ranges.s.lower > (ulong)rule.value)
+				high = ranges.s;
+			else if (ranges.s.higher <= (ulong)rule.value)
+				low = ranges.s;
+			else
+			{
+				low = (ranges.s.lower, (ulong)rule.value);
+				high = ((ulong)rule.value + 1, ranges.s.higher);
+			}
+		}
+
+		if (low != (0, 0)) // next rule
+		{
+			var newRanges = (rule.category == "x" ? low : ranges.x, rule.category == "m" ? low : ranges.m, rule.category == "a" ? low : ranges.a, rule.category == "s" ? low : ranges.s);
+			combinations += GetCombinations(newRanges, workflows, workflow, ruleIndex + 1);
+		}
+
+		if (high != (0, 0))
+		{
+			((ulong lower, ulong higher) x, (ulong lower, ulong higher) m, (ulong lower, ulong higher) a, (ulong lower, ulong higher) s) newRanges = (rule.category == "x" ? high : ranges.x, rule.category == "m" ? high : ranges.m, rule.category == "a" ? high : ranges.a, rule.category == "s" ? high : ranges.s);
+			
+			if (rule.destination == "A") // accept
+				combinations += (newRanges.x.higher - newRanges.x.lower + 1) * (newRanges.m.higher - newRanges.m.lower + 1) * (newRanges.a.higher - newRanges.a.lower + 1) * (newRanges.s.higher - newRanges.s.lower + 1);
+			else if (rule.destination == "R")  // reject
+				combinations += 0;
+			else // next workflow
+				combinations += GetCombinations(newRanges, workflows, rule.destination, 0);
+		}
+	}
+	else if (rule.lower)
+	{
+		(ulong lower, ulong higher) low = (0, 0);
+		(ulong lower, ulong higher) high = (0, 0);
+
+		if (rule.category == "x")
+		{
+			if (ranges.x.higher < (ulong)rule.value)
+				low = ranges.x;
+			else if (ranges.x.lower >= (ulong)rule.value)
+				high = ranges.x;
+			else
+			{
+				low = (ranges.x.lower, (ulong)rule.value - 1);
+				high = ((ulong)rule.value, ranges.x.higher);
+			}
+		}
+		else if (rule.category == "m")
+		{
+			if (ranges.m.higher < (ulong)rule.value)
+				low = ranges.m;
+			else if (ranges.m.lower >= (ulong)rule.value)
+				high = ranges.m;
+			else
+			{
+				low = (ranges.m.lower, (ulong)rule.value - 1);
+				high = ((ulong)rule.value, ranges.m.higher);
+			}
+		}
+		else if (rule.category == "a")
+		{
+			if (ranges.a.higher < (ulong)rule.value)
+				low = ranges.a;
+			else if (ranges.a.lower >= (ulong)rule.value)
+				high = ranges.a;
+			else
+			{
+				low = (ranges.a.lower, (ulong)rule.value - 1);
+				high = ((ulong)rule.value, ranges.a.higher);
+			}
+		}
+		else
+		{
+			if (ranges.s.higher < (ulong)rule.value)
+				low = ranges.s;
+			else if (ranges.s.lower >= (ulong)rule.value)
+				high = ranges.s;
+			else
+			{
+				low = (ranges.s.lower, (ulong)rule.value - 1);
+				high = ((ulong)rule.value, ranges.s.higher);
+			}
+		}
+
+		if (low != (0, 0))
+		{
+			((ulong lower, ulong higher) x, (ulong lower, ulong higher) m, (ulong lower, ulong higher) a, (ulong lower, ulong higher) s) newRanges = (rule.category == "x" ? low : ranges.x, rule.category == "m" ? low : ranges.m, rule.category == "a" ? low : ranges.a, rule.category == "s" ? low : ranges.s);
+
+			if (rule.destination == "A") // accept
+				combinations += (newRanges.x.higher - newRanges.x.lower + 1) * (newRanges.m.higher - newRanges.m.lower + 1) * (newRanges.a.higher - newRanges.a.lower + 1) * (newRanges.s.higher - newRanges.s.lower + 1);
+			else if (rule.destination == "R")  // reject
+				combinations += 0;
+			else // next workflow
+				combinations += GetCombinations(newRanges, workflows, rule.destination, 0);
+		}
+
+		if (high != (0, 0)) // next rule
+		{
+			var newRanges = (rule.category == "x" ? high : ranges.x, rule.category == "m" ? high : ranges.m, rule.category == "a" ? high : ranges.a, rule.category == "s" ? high : ranges.s);
+			combinations += GetCombinations(newRanges, workflows, workflow, ruleIndex + 1);
+		}
+	}
+	else if (rule.destination == "A") // accept
+		combinations += (ranges.x.higher - ranges.x.lower + 1) * (ranges.m.higher - ranges.m.lower + 1) * (ranges.a.higher - ranges.a.lower + 1) * (ranges.s.higher - ranges.s.lower + 1);
+	else if (rule.destination == "R")  // reject
+		combinations += 0;
+	else // next workflow
+		combinations += GetCombinations(ranges, workflows, rule.destination, 0);
+
+    return combinations;
+}
+
+
+public class Rule
+{
+	public string category { get; set; }
+	public bool lower { get; set; }
+	public bool higher { get; set; }
+	public int value { get; set; }
+	public string destination { get; set; }
+}
+
+
+public class Part
+{
+	public int x { get; set; }
+	public int m { get; set; }
+	public int a { get; set; }
+	public int s { get; set; }
+}
