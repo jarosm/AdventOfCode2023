@@ -1,0 +1,198 @@
+﻿
+using System.Diagnostics.Contracts;
+using System.Reflection;
+using System.Runtime.InteropServices;
+
+Part1();
+
+Part2();
+
+Console.WriteLine("end");
+Console.ReadLine();
+
+
+Dictionary<string, Module> ParseInput()
+{
+	var input = File.ReadAllLines("input.txt");
+
+	Dictionary<string, Module> modules = new Dictionary<string, Module>();
+	foreach (var line in input)
+	{
+		string[] t1 = line.Replace(" -> ", ";").Split(';');
+		string[] t2 = t1[1].Replace(" ", "").Split(',');
+
+		if (t1[0] == "broadcaster")
+			modules.Add("broadcaster", new BroadcastModule("broadcaster", t2));
+		else if (t1[0].StartsWith("%"))
+			modules.Add(t1[0].Substring(1), new FlipFlopModule(t1[0].Substring(1), t2));
+		else
+			modules.Add(t1[0].Substring(1), new ConjunctionModule(t1[0].Substring(1), t2));
+	}
+
+	// Get origins for Conjuctions
+	var cons = modules.Where(m => m.Value.Type == ModuleType.Conjuction);
+	foreach (var m in cons)
+		((ConjunctionModule)m.Value).CreateStates(modules.Where(a => a.Value.Destinations.Contains(m.Key)).Select(b => b.Key).ToArray());
+
+	return modules;
+}
+
+
+void Part1()
+{
+	var modules = ParseInput();
+
+	int lowCount = 0, highCount = 0, counter = 0;
+
+	while (true)
+	{
+		counter++;
+
+		Queue<(string origin, string destination, bool highPulse)> queue = new Queue<(string origin, string destination, bool highPulse)>();
+		queue.Enqueue(("button", "broadcaster", false));
+		while (queue.Count > 0)
+		{
+			var s = queue.Dequeue();
+
+			if (modules.ContainsKey(s.destination))
+				modules[s.destination].ProcessPulse(queue, s.highPulse, s.origin);
+
+			if (s.highPulse)
+				highCount++;
+			else
+				lowCount++;
+		}
+
+		if (counter == 1000)
+			break;
+	}
+
+	ulong result = (ulong)highCount * (ulong)lowCount;
+
+	Console.WriteLine($"Part 1: {result}");
+}
+
+
+void Part2()
+{
+	var modules = ParseInput();
+
+	int counter = 0;
+	Dictionary<string, int> counts = new Dictionary<string, int>() { { "dd", 0 }, { "fh", 0 }, { "xp", 0 }, { "fc", 0 } };
+
+	while (true)
+	{
+		counter++;
+
+		Queue<(string origin, string destination, bool highPulse)> queue = new Queue<(string origin, string destination, bool highPulse)>();
+		queue.Enqueue(("button", "broadcaster", false));
+		while (queue.Count > 0)
+		{
+			var s = queue.Dequeue();
+
+			if (modules.ContainsKey(s.destination))
+				modules[s.destination].ProcessPulse(queue, s.highPulse, s.origin);
+
+			if (s.highPulse && (s.origin == "dd" || s.origin == "fh" || s.origin == "xp" || s.origin == "fc"))
+			{
+				if (counts[s.origin] == 0)
+					counts[s.origin] = counter;
+			}
+		}
+
+		if (counts.All(c => c.Value > 0))
+			break;
+	}
+
+	ulong result = (ulong)counts["dd"] * (ulong)counts["fh"] * (ulong)counts["xp"] * (ulong)counts["fc"];
+
+	Console.WriteLine($"Part 2: {result}");
+}
+
+
+public enum ModuleType
+{
+	Broadcast,
+	FlipFlop,
+	Conjuction,
+	Output
+}
+
+public class Module
+{
+	public string Name { get; set; }
+	public ModuleType Type { get; set; }
+
+	public List<string> Destinations { get; set; }
+
+	public Module(string name, ModuleType type, string[] destinations)
+	{
+		Name = name;
+		Type = type;
+		Destinations = destinations.ToList();
+	}
+
+	public virtual void ProcessPulse(Queue<(string origin, string destination, bool highPulse)> queue, bool highPulse, string origin = "")
+	{
+	}
+}
+
+public class BroadcastModule : Module
+{
+	public BroadcastModule(string name, string[] destinations) : base(name, ModuleType.Broadcast, destinations)
+	{
+	}
+
+	public override void ProcessPulse(Queue<(string origin, string destination, bool highPulse)> queue, bool highPulse, string origin = "")
+	{
+		for (int i = 0; i < Destinations.Count; i++)
+			queue.Enqueue((Name, Destinations[i], highPulse));
+	}
+}
+
+public class FlipFlopModule : Module
+{
+	public bool State { get; set; }
+
+	public FlipFlopModule(string name, string[] destinations) : base(name, ModuleType.FlipFlop, destinations)
+	{
+		State = false;
+	}
+
+	public override void ProcessPulse(Queue<(string origin, string destination, bool highPulse)> queue, bool highPulse, string origin = "")
+	{
+		if (!highPulse)
+		{
+			State = !State;
+
+			for (int i = 0; i < Destinations.Count; i++)
+				queue.Enqueue((Name, Destinations[i], State));
+		}
+	}
+}
+
+public class ConjunctionModule : Module
+{
+	public Dictionary<string, bool> States { get; set; }
+
+	public ConjunctionModule(string name, string[] destinations) : base(name, ModuleType.Conjuction, destinations)
+	{
+		States = new Dictionary<string, bool>();
+	}
+
+	public override void ProcessPulse(Queue<(string origin, string destination, bool highPulse)> queue, bool highPulse, string origin)
+	{
+		States[origin] = highPulse;
+
+		bool pulseToSend = !States.All(s => s.Value);
+
+		for (int i = 0; i < Destinations.Count; i++)
+			queue.Enqueue((Name, Destinations[i], pulseToSend));
+	}
+
+	public void CreateStates(string[] origins)
+	{
+		for (int i = 0; i < origins.Length; i++)
+			States[origins[i]] = false;
+	}
+}
