@@ -1,0 +1,98 @@
+﻿
+using System.Drawing;
+using System.Numerics;
+
+Vector2[] dirs = new Vector2[] { new Vector2(0, -1), new Vector2(-1, 0), new Vector2(0, 1), new Vector2(1, 0) }; // North (0), West (1), South (2), East (3)
+
+HashSet<Vector2> rocks = new HashSet<Vector2>();
+int maxX = 0, maxY = 0;
+Vector2 start = new Vector2();
+
+ParseInput();
+
+Part1();
+
+Part2();
+
+Console.WriteLine("end");
+Console.ReadLine();
+
+
+void ParseInput()
+{
+	var input = File.ReadAllLines("input.txt");
+
+	maxY = input.Length - 1;
+	maxX = input[0].Length - 1;
+	for (int y = 0; y <= maxY; y++)
+	{
+		for (int x = 0; x <= maxX; x++)
+		{
+			if (input[y][x] == '#')
+				rocks.Add(new Vector2(x, y));
+			else if (input[y][x] == 'S')
+				start = new Vector2(x, y);
+		}
+	}
+}
+
+
+void Part1()
+{
+	Console.WriteLine($"Part 1: {GetCount(64)}");
+}
+
+
+void Part2()
+{
+	// Quadratic interpolation formula
+	long x = 26501365;
+
+	int x0 = 65;
+	int y0 = GetCount(x0, true);
+
+	int x1 = 65 + 131;
+	int y1 = GetCount(x1, false);
+
+	int x2 = 65 + 2 * 131;
+	int y2 = GetCount(x2, true);
+
+	long L0 = (x - x1) * (x - x2) / ((x0 - x1) * (x0 - x2));
+	long L1 = (x - x0) * (x - x2) / ((x1 - x0) * (x1 - x2));
+	long L2 = (x - x0) * (x - x1) / ((x2 - x0) * (x2 - x1));
+
+	ulong y = (ulong)y0 * (ulong)L0 + (ulong)y1 * (ulong)L1 + (ulong)y2 * (ulong)L2;
+
+	Console.WriteLine($"Part 2: {y}");
+}
+
+
+int GetCount(int maxSteps, bool odd = false)
+{
+	HashSet<Vector2> canReach = new HashSet<Vector2>();
+	Queue<(Vector2 plot, int steps)> queue = new Queue<(Vector2 plot, int steps)>();
+
+	queue.Enqueue((start, 0));
+	while (queue.Count > 0)
+	{
+		var p = queue.Dequeue();
+
+		Vector2 check = new Vector2((p.plot.X + 5 * (maxX + 1)) % (maxX + 1), (p.plot.Y + 5 * (maxY + 1)) % (maxY + 1));
+		if (rocks.Contains(check))
+			continue;
+
+		if (canReach.Contains(p.plot))
+			continue;
+
+		if ((!odd && p.steps % 2 == 0) || (odd && p.steps % 2 == 1))
+			canReach.Add(p.plot);
+
+		if (p.steps == maxSteps)
+			continue;
+
+		foreach (var d in dirs)
+			queue.Enqueue((p.plot + d, p.steps + 1));
+	}
+
+	return canReach.Count;
+}
