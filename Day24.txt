@@ -1,0 +1,158 @@
+﻿
+using Microsoft.Z3;
+
+Part1();
+
+Part2();
+
+Console.WriteLine("end");
+Console.ReadLine();
+
+
+List<Hailstone> ParseInput()
+{
+	var input = File.ReadAllLines("input.txt");
+
+	return input.Select(l => CreateHailstone(l)).ToList();
+}
+
+
+void Part1()
+{
+	var stones = ParseInput();
+
+	// Test
+	//long min = 7, max = 27;
+
+	// Input
+	double min = 200_000_000_000_000.0, max = 400_000_000_000_000.0;
+
+	int count = 0, b = -1;
+	for (int i = 0; i < stones.Count - 1; i++)
+	{
+		var first = stones[i];
+		var a1 = first.Slope;
+		var c1 = first.Intersect;
+		var x1 = first.X;
+		var y1 = first.Y;
+		var vx1 = first.DX;
+		var vy1 = first.DY;
+
+		for (int j = i + 1; j < stones.Count; j++)
+		{
+			var second = stones[j];
+			var a2 = second.Slope;
+			var c2 = second.Intersect;
+			var x2 = second.X;
+			var y2 = second.Y;
+			var vx2 = second.DX;
+			var vy2 = second.DY;
+
+			if (a1 == a2) // paralell
+				continue;
+
+			var x = (b * c2 - b * c1) / (a1 * b - a2 * b);
+			var y = (a2 * c1 - a1 * c2) / (a1 * b - a2 * b);
+
+			if (x - x1 < 0 != vx1 < 0 || y - y1 < 0 != vy1 < 0) // Opposite to first's direction
+				continue;
+
+			if (x - x2 < 0 != vx2 < 0 || y - y2 < 0 != vy2 < 0) // Opposite to second's direction
+				continue;
+
+			if (InBounds(min, max, x, y))
+				count++;
+		}
+	}
+
+	Console.WriteLine($"Part 1: {count}");
+}
+
+
+// Using Z3 to solve the system of equations
+void Part2()
+{
+	var stones = ParseInput();
+
+	var ctx = new Context();
+	var solver = ctx.MkSolver();
+
+	// Coordinates of the stone
+	var x = ctx.MkIntConst("x");
+	var y = ctx.MkIntConst("y");
+	var z = ctx.MkIntConst("z");
+
+	// Velocity of the stone
+	var vx = ctx.MkIntConst("vx");
+	var vy = ctx.MkIntConst("vy");
+	var vz = ctx.MkIntConst("vz");
+
+	// For each iteration, we will add 3 new equations and one new condition to the solver.
+	// We want to find 9 variables (x, y, z, vx, vy, vz, t0, t1, t2) that satisfy all the equations, so a system of 9 equations is enough.
+	for (var i = 0; i < 3; i++)
+	{
+		var t = ctx.MkIntConst($"t{i}"); // time for the stone to reach the hail
+		var hail = stones[i];
+
+		var px = ctx.MkInt(Convert.ToInt64(hail.X));
+		var py = ctx.MkInt(Convert.ToInt64(hail.Y));
+		var pz = ctx.MkInt(Convert.ToInt64(hail.Z));
+
+		var pvx = ctx.MkInt(Convert.ToInt64(hail.DX));
+		var pvy = ctx.MkInt(Convert.ToInt64(hail.DY));
+		var pvz = ctx.MkInt(Convert.ToInt64(hail.DZ));
+
+		var xLeft = ctx.MkAdd(x, ctx.MkMul(t, vx)); // x + t * vx
+		var yLeft = ctx.MkAdd(y, ctx.MkMul(t, vy)); // y + t * vy
+		var zLeft = ctx.MkAdd(z, ctx.MkMul(t, vz)); // z + t * vz
+
+		var xRight = ctx.MkAdd(px, ctx.MkMul(t, pvx)); // px + t * pvx
+		var yRight = ctx.MkAdd(py, ctx.MkMul(t, pvy)); // py + t * pvy
+		var zRight = ctx.MkAdd(pz, ctx.MkMul(t, pvz)); // pz + t * pvz
+
+		solver.Add(t >= 0); // time should always be positive - we don't want solutions for negative time
+		solver.Add(ctx.MkEq(xLeft, xRight)); // x + t * vx = px + t * pvx
+		solver.Add(ctx.MkEq(yLeft, yRight)); // y + t * vy = py + t * pvy
+		solver.Add(ctx.MkEq(zLeft, zRight)); // z + t * vz = pz + t * pvz
+	}
+
+	solver.Check();
+	var model = solver.Model;
+
+	var rx = model.Eval(x);
+	var ry = model.Eval(y);
+	var rz = model.Eval(z);
+
+
+	Console.WriteLine($"Part 2: {Convert.ToInt64(rx.ToString()) + Convert.ToInt64(ry.ToString()) + Convert.ToInt64(rz.ToString())}");
+}
+
+
+bool InBounds(double min, double max, double X, double Y) => X >= min && X <= max && Y >= min && Y <= max;
+
+
+Hailstone CreateHailstone(string line)
+{
+	string[] t = line.Replace(" ", "").Split('@');
+	string[] t1 = t[0].Split(',');
+	string[] t2 = t[1].Split(',');
+	return new Hailstone() { X = double.Parse(t1[0]), Y = double.Parse(t1[1]), Z = double.Parse(t1[2]), DX = double.Parse(t2[0]), DY = double.Parse(t2[1]), DZ = double.Parse(t2[2]) };
+}
+
+
+public class Hailstone
+{
+	public double X;
+	public double Y;
+	public double Z;
+	public double DX;
+	public double DY;
+	public double DZ;
+
+	public double X2 { get { return X + DX; } }
+	public double Y2 { get { return Y + DY; } }
+	public double Z2 { get { return Z + DZ; } }
+
+	public double Slope { get { return (Y2 - Y) / (X2 - X); } }
+    public double Intersect { get { return Y2 - Slope * X2; } }
+}
